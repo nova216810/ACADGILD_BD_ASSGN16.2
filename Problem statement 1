@@ -1,0 +1,95 @@
+Write a hive UDF that implements functionality of string concat_ws(string SEP, array<string>).
+This UDF will accept two arguments, one string and one array of string.
+It will return a single string where all the elements of the array are separated by the SEP
+
+
+Open Eclipse to create a new Java Project
+----------------------------------------
+package udf;
+
+import org.apache.hadoop.hive.ql.exec.UDF;
+
+public class Concat extends UDF
+{
+	public String evaluate (String SEP,String[] array) 
+	{
+		if SEP == null || array == null) 
+		{
+			return "Invalid Parameters.. aborting program";
+		}
+			
+		StringBuilder builder = new StringBuilder();
+		int iter=0;
+		for (String item in array){
+		{
+			builder.append(item);
+			if(array[iter+1]!=null) 
+        builder.append(SEP);
+		}
+		return builder.toString();
+	}
+}
+
+Open Terminal,
+Start all hadoop daemons using start-all.sh
+Check if the the required services are working by jps
+Start hive using 
+[acadgild@localhost ~]$ sudo service mysqld start
+[sudo] password for acadgild: 
+Starting mysqld:                                           [  OK  ]
+[acadgild@localhost ~]$ hive start
+Create a new table with array field
+----------------------------------
+hive> use default;
+OK
+Time taken: 0.79 seconds
+
+hive> create table emp_proj(ename string, project array<string>) row format delimited fields terminated by ' ' collection items terminated by ',' lines terminated by '\n' stored as textfile;
+OK
+Time taken: 0.965 seconds
+
+hive> load data local inpath 'data/emp_proj.txt' into table emp_proj;
+Loading data to table default.emp_proj
+Table default.emp_proj stats: [numFiles=1, totalSize=82]
+OK
+Time taken: 8.823 seconds
+
+hive> select * from emp_proj;
+OK
+ram	["proj1","proj2","proj3"]
+deeraj	["proj3","proj4"]
+sham	["proj1"]
+geeta	NULL
+seeta	["proj2","proj3","proj5"]
+ram	["proj1","proj2","proj3"]
+deeraj	["proj3","proj4"]
+sham	["proj1"]
+geeta	["proj"]
+seeta	["proj2","proj3","proj5"]
+Time taken: 1.011 seconds, Fetched: 10 row(s)
+
+
+
+hive> ADD JAR /home/acadgild/HIVEUDF.jar;
+Added [/home/acadgild/HIVEUDF.jar] to class path
+Added resources: [/home/acadgild/HIVEUDF.jar]
+
+
+hive> CREATE TEMPORARY FUNCTION concat AS 'ConcatWS';
+OK
+Time taken: 0.141 seconds
+
+hive> select concat ('|', project) from emp_proj;
+OK
+proj1|proj2|proj3
+proj3|proj4
+proj1
+proj2|proj3|proj5
+proj1|proj2|proj3
+proj3|proj4
+proj1
+proj
+proj2|proj3|proj5
+Time taken: 1.011 seconds, Fetched: 9 row(s)
+
+
